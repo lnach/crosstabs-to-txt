@@ -14,29 +14,16 @@ def clean_cell(text):
     text = re.sub(r"(\w+)-\s+(\w+)", r"\1\2", text)
     return text.strip()
 
-# --- Live log placeholder ---
-log_placeholder = st.empty()
-log_messages = []
-
-def log_callback(msg):
-    log_messages.append(msg)
-    log_placeholder.text("\n".join(log_messages))
-
 # --- Table extraction logic ---
-def extract_all_tables_to_txt(pdf_path, output_txt, log_callback=None):
+def extract_all_tables_to_txt(pdf_path):
     all_blocks = []
 
     with pdfplumber.open(pdf_path) as pdf:
         for page_num, page in enumerate(pdf.pages, start=1):
-            if log_callback:
-                log_callback(f"🔍 Processing page {page_num}/{len(pdf.pages)}")
-
             table = page.extract_table()
             full_text = page.extract_text()
 
             if not table or not full_text:
-                if log_callback:
-                    log_callback(f"⏭️ Skipping page {page_num} (no table or text)")
                 continue
 
             lines = full_text.split("\n")
@@ -93,12 +80,7 @@ def extract_all_tables_to_txt(pdf_path, output_txt, log_callback=None):
                 block.append(", ".join([str(cell) for cell in row[:len(full_headers)]]))
             all_blocks.append("\n".join(block))
 
-    with open(output_txt, "w") as f:
-        f.write("\n\n".join(all_blocks))
-
-    if log_callback:
-        log_callback(f"\n✅ GPT-friendly .txt saved to → {output_txt}")
-    return output_txt
+    return "\n\n".join(all_blocks)
 
 # --- Streamlit UI ---
 st.title("Crosstab to GPT Text Converter")
@@ -115,11 +97,7 @@ if uploaded_file:
         temp_pdf_path = temp_pdf.name
 
     with st.spinner("🔍 Extracting tables and formatting..."):
-        txt_output_path = temp_pdf_path.replace(".pdf", "_for_gpt.txt")
-        final_path = extract_all_tables_to_txt(temp_pdf_path, txt_output_path, log_callback=log_callback)
-
-        with open(final_path, "r") as file:
-            txt_content = file.read()
+        txt_content = extract_all_tables_to_txt(temp_pdf_path)
 
         st.success("✅ Done! Download your file below.")
         st.download_button(
@@ -131,6 +109,3 @@ if uploaded_file:
 
         st.subheader("Preview of Extracted Text")
         st.text_area("Scroll to preview:", txt_content[:2000], height=300)
-
-        with st.expander("🔍 Show full extraction log"):
-            st.text("\n".join(log_messages))
