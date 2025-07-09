@@ -6,7 +6,7 @@ import os
 
 st.set_page_config(page_title="Crosstab Extractor", layout="centered")
 
-# --- Core logic from your extraction function ---
+# --- Clean cell content ---
 def clean_cell(text):
     if not text:
         return ""
@@ -14,6 +14,15 @@ def clean_cell(text):
     text = re.sub(r"(\w+)-\s+(\w+)", r"\1\2", text)
     return text.strip()
 
+# --- Live log placeholder ---
+log_placeholder = st.empty()
+log_messages = []
+
+def log_callback(msg):
+    log_messages.append(msg)
+    log_placeholder.text("\n".join(log_messages))
+
+# --- Table extraction logic ---
 def extract_all_tables_to_txt(pdf_path, output_txt, log_callback=None):
     all_blocks = []
 
@@ -32,6 +41,7 @@ def extract_all_tables_to_txt(pdf_path, output_txt, log_callback=None):
 
             lines = full_text.split("\n")
 
+            # Extract question and banner
             question_lines = []
             for line in lines:
                 if "BANNER" in line.upper():
@@ -43,6 +53,7 @@ def extract_all_tables_to_txt(pdf_path, output_txt, log_callback=None):
             question_text = " ".join(question_lines).strip()
             banner_label = next((line.strip() for line in lines if "BANNER" in line.upper()), "")
 
+            # Clean and build table
             table = [row for row in table if any(cell and cell.strip() for cell in row)]
             header_rows = table[:3]
             data_rows = table[3:]
@@ -90,26 +101,11 @@ def extract_all_tables_to_txt(pdf_path, output_txt, log_callback=None):
         log_callback(f"\n✅ GPT-friendly .txt saved to → {output_txt}")
     return output_txt
 
-log_messages = []
-
-def log_callback(msg):
-    log_messages.append(msg)
-    log_area.text("\n".join(log_messages))
-
 # --- Streamlit UI ---
 st.title("Crosstab to GPT Text Converter")
 st.markdown("Upload a PDF of crosstabs, and download a cleaned `.txt` file formatted for ChatGPT.")
 
 uploaded_file = st.file_uploader("📄 Upload your Crosstabs PDF", type=["pdf"])
-
-# 👇 This creates the collapsible log box
-log_messages = []
-with st.expander("🔍 Show extraction log"):
-    log_area = st.empty()
-
-def log_callback(msg):
-    log_messages.append(msg)
-    log_area.text("\n".join(log_messages))
 
 if uploaded_file:
     default_filename = uploaded_file.name.replace(".pdf", "_for_gpt.txt")
@@ -131,3 +127,6 @@ if uploaded_file:
 
         st.subheader("Preview of Extracted Text")
         st.text_area("Scroll to preview:", txt_content[:2000], height=300)
+
+        with st.expander("🔍 Show full extraction log"):
+            st.text("\n".join(log_messages))
