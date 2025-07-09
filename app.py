@@ -14,7 +14,6 @@ def clean_cell(text):
     text = re.sub(r"(\w+)-\s+(\w+)", r"\1\2", text)
     return text.strip()
 
-<<<<<<< HEAD
 # --- Live log placeholder ---
 log_placeholder = st.empty()
 log_messages = []
@@ -25,9 +24,6 @@ def log_callback(msg):
 
 # --- Table extraction logic ---
 def extract_all_tables_to_txt(pdf_path, output_txt, log_callback=None):
-=======
-def extract_all_tables_to_txt(pdf_path):
->>>>>>> ce4dd66 (Fixed code so its working again)
     all_blocks = []
 
     with pdfplumber.open(pdf_path) as pdf:
@@ -44,11 +40,6 @@ def extract_all_tables_to_txt(pdf_path):
                 continue
 
             lines = full_text.split("\n")
-<<<<<<< HEAD
-
-            # Extract question and banner
-=======
->>>>>>> ce4dd66 (Fixed code so its working again)
             question_lines = []
 
             for line in lines:
@@ -62,7 +53,6 @@ def extract_all_tables_to_txt(pdf_path):
             question_text = " ".join(question_lines).strip()
             banner_label = next((line.strip() for line in lines if "BANNER" in line.upper()), "")
 
-            # Clean and build table
             table = [row for row in table if any(cell and cell.strip() for cell in row)]
             header_rows = table[:3]
             data_rows = table[3:]
@@ -103,16 +93,12 @@ def extract_all_tables_to_txt(pdf_path):
                 block.append(", ".join([str(cell) for cell in row[:len(full_headers)]]))
             all_blocks.append("\n".join(block))
 
-<<<<<<< HEAD
     with open(output_txt, "w") as f:
         f.write("\n\n".join(all_blocks))
 
     if log_callback:
         log_callback(f"\n✅ GPT-friendly .txt saved to → {output_txt}")
     return output_txt
-=======
-    return "\n\n".join(all_blocks)
->>>>>>> ce4dd66 (Fixed code so its working again)
 
 # --- Streamlit UI ---
 st.title("Crosstab to GPT Text Converter")
@@ -129,15 +115,11 @@ if uploaded_file:
         temp_pdf_path = temp_pdf.name
 
     with st.spinner("🔍 Extracting tables and formatting..."):
-<<<<<<< HEAD
         txt_output_path = temp_pdf_path.replace(".pdf", "_for_gpt.txt")
         final_path = extract_all_tables_to_txt(temp_pdf_path, txt_output_path, log_callback=log_callback)
 
         with open(final_path, "r") as file:
             txt_content = file.read()
-=======
-        txt_content = extract_all_tables_to_txt(temp_pdf_path)
->>>>>>> ce4dd66 (Fixed code so its working again)
 
         st.success("✅ Done! Download your file below.")
         st.download_button(
