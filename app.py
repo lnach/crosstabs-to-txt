@@ -14,15 +14,20 @@ def clean_cell(text):
     text = re.sub(r"(\w+)-\s+(\w+)", r"\1\2", text)
     return text.strip()
 
-def extract_all_tables_to_txt(pdf_path, output_txt):
+def extract_all_tables_to_txt(pdf_path, output_txt, log_callback=None):
     all_blocks = []
 
     with pdfplumber.open(pdf_path) as pdf:
         for page_num, page in enumerate(pdf.pages, start=1):
+            if log_callback:
+                log_callback(f"🔍 Processing page {page_num}/{len(pdf.pages)}")
+
             table = page.extract_table()
             full_text = page.extract_text()
 
             if not table or not full_text:
+                if log_callback:
+                    log_callback(f"⏭️ Skipping page {page_num} (no table or text)")
                 continue
 
             lines = full_text.split("\n")
@@ -81,13 +86,30 @@ def extract_all_tables_to_txt(pdf_path, output_txt):
     with open(output_txt, "w") as f:
         f.write("\n\n".join(all_blocks))
 
+    if log_callback:
+        log_callback(f"\n✅ GPT-friendly .txt saved to → {output_txt}")
     return output_txt
+
+log_messages = []
+
+def log_callback(msg):
+    log_messages.append(msg)
+    log_area.text("\n".join(log_messages))
 
 # --- Streamlit UI ---
 st.title("Crosstab to GPT Text Converter")
 st.markdown("Upload a PDF of crosstabs, and download a cleaned `.txt` file formatted for ChatGPT.")
 
 uploaded_file = st.file_uploader("📄 Upload your Crosstabs PDF", type=["pdf"])
+
+# 👇 This creates the collapsible log box
+log_messages = []
+with st.expander("📟 Conversion Log (click to expand)", expanded=False):
+    log_area = st.empty()
+
+def log_callback(msg):
+    log_messages.append(msg)
+    log_area.text("\n".join(log_messages))
 
 if uploaded_file:
     default_filename = uploaded_file.name.replace(".pdf", "_for_gpt.txt")
@@ -99,7 +121,7 @@ if uploaded_file:
 
     with st.spinner("🔍 Extracting tables and formatting..."):
         txt_output_path = temp_pdf_path.replace(".pdf", "_for_gpt.txt")
-        final_path = extract_all_tables_to_txt(temp_pdf_path, txt_output_path)
+        final_path = extract_all_tables_to_txt(temp_pdf_path, txt_output_path, log_callback=log_callback)
 
         with open(final_path, "r") as file:
             txt_content = file.read()
