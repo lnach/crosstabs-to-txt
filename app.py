@@ -104,7 +104,7 @@ uploaded_file = st.file_uploader("📄 Upload your Crosstabs PDF", type=["pdf"])
 
 # 👇 This creates the collapsible log box
 log_messages = []
-with st.expander("📟 Conversion Log (click to expand)", expanded=False):
+with st.expander("🔍 Show extraction log"):
     log_area = st.empty()
 
 def log_callback(msg):
